@@ -1,37 +1,38 @@
 #!/usr/bin/python3
-"""Gets user data from API
-and then export the result to csv file. """
-
+"""
+Request from API; Return TODO list progress of all employees
+Export this data to JSON
+"""
 import json
 import requests
 
 
-def main():
-    """main function"""
-    todo_url = 'https://jsonplaceholder.typicode.com/todos'
+def all_to_json():
+    """return API data"""
+    USERS = []
+    userss = requests.get("http://jsonplaceholder.typicode.com/users")
+    for u in userss.json():
+        USERS.append((u.get('id'), u.get('username')))
+    TASK_STATUS_TITLE = []
+    todos = requests.get("http://jsonplaceholder.typicode.com/todos")
+    for t in todos.json():
+        TASK_STATUS_TITLE.append((t.get('userId'),
+                                  t.get('completed'),
+                                  t.get('title')))
 
-    response = requests.get(todo_url)
-
-    output = {}
-
-    for todo in response.json():
-        user_id = todo.get('userId')
-        if user_id not in output.keys():
-            output[user_id] = []
-            user_url = 'https://jsonplaceholder.typicode.com/users/{}'.format(
-                user_id)
-            user_name = requests.get(user_url).json().get('username')
-
-        output[user_id].append(
-            {
-                "username": user_name,
-                "task": todo.get('title'),
-                "completed": todo.get('completed')
-            })
-
-    with open("todo_all_employees.json", 'w') as file:
-        json.dump(output, file)
+    """export to json"""
+    data = dict()
+    for u in USERS:
+        t = []
+        for task in TASK_STATUS_TITLE:
+            if task[0] == u[0]:
+                t.append({"task": task[2], "completed": task[1],
+                          "username": u[1]})
+        data[str(u[0])] = t
+    filename = "todo_all_employees.json"
+    with open(filename, "w") as f:
+        json.dump(data, f, sort_keys=True)
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    all_to_json()
